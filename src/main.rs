@@ -126,34 +126,72 @@ fn main() -> Result<()>{
                         _ => continue,
                     };
 
-                    if typed_characters.len() >= 1{
-                        let mut first_char = matched_key;
-                        let mut last_char = typed_characters.chars().last().unwrap();
-                        terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, &last_char, &first_char); })?;
-                        if first_char.is_numeric(){
-                            if last_char.is_numeric(){
-                                typed_characters.push(first_char);
-                            } else {
-                                typed_characters.push( match matched_key {
-                                    '1' => '₁',
-                                    '2' => '₂',
-                                    '3' => '₃',
-                                    '4' => '₄',
-                                    '5' => '₅',
-                                    '6' => '₆',
-                                    '7' => '₇',
-                                    '8' => '₈',
-                                    '9' => '₉',
-                                    '0' => '₀',
-                                    _ => matched_key,
-                                });
+                    if typed_characters.len() >= 2 {
+                        let current_character = matched_key; // 2
+                        let last_char = typed_characters.chars().last().unwrap(); //H
+                        let second_to_last_char = typed_characters.chars().rev().nth(1).unwrap(); //H
+
+                        if current_character.is_numeric() {
+                            if last_char.is_alphabetic() {
+                                let mut is_multi_letter_element = false;
+                                let mut chars_iter = typed_characters.chars().rev();
+                                chars_iter.next(); // Skip the last character (which is a letter)
+
+                                for c in chars_iter {
+                                    if c.is_alphabetic() {
+                                        is_multi_letter_element = true;
+                                        break;
+                                    } else if c.is_numeric() {
+                                        break;
+                                    }
                                 }
+
+                                if is_multi_letter_element || second_to_last_char.is_numeric() {
+                                    typed_characters.push(match current_character {
+                                        '1' => '₁',
+                                        '2' => '₂',
+                                        '3' => '₃',
+                                        '4' => '₄',
+                                        '5' => '₅',
+                                        '6' => '₆',
+                                        '7' => '₇',
+                                        '8' => '₈',
+                                        '9' => '₉',
+                                        '0' => '₀',
+                                        _ => current_character,
+                                    });
+                                } else {
+                                    typed_characters.push(current_character);
+                                }
+                            } else {
+                                typed_characters.push(current_character);
                             }
                         } else {
+                            typed_characters.push(current_character);
+                        }
+
+                        terminal.draw(|f| {
+                            let _ = render_widgets(
+                                f,
+                                &typed_characters,
+                                &last_char,
+                                &second_to_last_char,
+                            );
+                        })?;
+                    } else if typed_characters.len() == 1 {
+                        let last_char = typed_characters.chars().last().unwrap();
+                        terminal.draw(|f| {
+                            let _ = render_widgets(f, &typed_characters, &last_char, &'0');
+                        })?;
                         typed_characters.push(matched_key);
+                    } else {
+                        typed_characters.push(matched_key);
+                        terminal.draw(|f| {
+                            let _ = render_widgets(f, &typed_characters, &'0', &'0');
+                        })?;
                     }
 
-                    //terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, &'0', &'0'); })?;
+                    terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, &'0', &'0'); })?;
                 }
             }
         }

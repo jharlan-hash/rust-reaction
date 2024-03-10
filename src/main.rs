@@ -1,3 +1,5 @@
+mod balance;
+
 use std::{time};
 use ratatui::widgets::Paragraph;
 use ratatui::prelude::*;
@@ -12,8 +14,9 @@ use crossterm::{terminal::{
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode};
 use ratatui::widgets::{Block, Borders};
+use crate::balance::balancer;
 
-fn render_widgets(f: &mut Frame, typed_characters: &str, last_char: &char, first_char: &char) -> Result<()> {
+fn render_widgets(f: &mut Frame, typed_characters: &str, output_message: String) -> Result<()> {
     let layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vec![
@@ -29,7 +32,7 @@ fn render_widgets(f: &mut Frame, typed_characters: &str, last_char: &char, first
     );
 
     f.render_widget(
-        Paragraph::new(format!("Value of last_char = '{}', value of first_char = '{}' ", last_char, first_char).to_string())
+        Paragraph::new(format!("{}", output_message).to_string())
             .block(Block::default().title("Output".to_string()).borders(Borders::ALL)),
         layout[1],
     );
@@ -43,7 +46,7 @@ fn main() -> Result<()>{
     crossterm::execute!(std::io::stderr(), EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(std::io::stderr()))?;
 
-    terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, &'0', &'0'); })?;
+    terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, String::from("press q to quit, press enter to balance")); })?;
 
     loop {
         crossterm::execute!(std::io::stderr(), EnterAlternateScreen)?;
@@ -120,13 +123,17 @@ fn main() -> Result<()>{
                         Char('=') => '=',
                         KeyCode::Backspace => {
                             typed_characters.pop();
-                            terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, &'0', &'0'); })?;
+                            terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, String::from("press q to quit, press enter to balance")); })?;
+                            continue;
+                        },
+                        KeyCode::Enter => {
+                            terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, format!("{}", balancer(&typed_characters))); })?;
                             continue;
                         },
                         _ => continue,
                     };
 
-                    let current_character = matched_key; // 2
+                    let current_character = matched_key;
                     typed_characters.push(match current_character {
                                         '1' => '₁',
                                         '2' => '₂',
@@ -141,7 +148,7 @@ fn main() -> Result<()>{
                                         _ => matched_key,
                     });
 
-                    terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, &'0', &'0'); })?;
+                    terminal.draw(|f| { let _ = render_widgets(f, &typed_characters, String::from("press q to quit, press enter to balance")); })?;
                 }
             }
         }
